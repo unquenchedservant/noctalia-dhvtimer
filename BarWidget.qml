@@ -26,26 +26,45 @@ Item {
   implicitWidth: contentWidth
   implicitHeight: contentHeight
 
-  property var timerData: ({text: "--", "class": "white"})
+  property var timerData: ({text: "0:00", "class": "white"})
 
   property color timerColor: {
     switch (timerData["class"]) {
-      case "green":  return "#a6e3a1"
-      case "yellow": return "#f9e2af"
-      case "red":    return "#f38ba8"
+      case "green":  return "#00ff00"
+      case "yellow": return "#FFFF00"
+      case "red":    return "#FF0000"
       default:       return Color.mOnSurface
     }
   }
 
-  FileView {
-    id: timerFile
-    path: Quickshell.env("HOME") + "/dhv_timer.txt"
-    watchChanges: true
-    onTextChanged: {
+  Process {
+    id: timerProcess
+    command: ["cat", "/home/jthorne/dhv_timer.txt"]
+    stdout: StdioCollector {}
+
+    onExited: {
       try {
-        root.timerData = JSON.parse(text.trim())
+        root.timerData = JSON.parse(timerProcess.stdout.text.trim())
       } catch (_) {}
     }
+  }
+
+  Process {
+    id: leftClickProcess
+    command: ["touch", "/home/jthorne/dhv_timer_click1"]
+  }
+
+  Process {
+    id: rightClickProcess
+    command: ["touch", "/home/jthorne/dhv_timer_click2"]
+  }
+
+  Timer {
+    interval: 1000
+    running: true
+    repeat: true
+    triggeredOnStart: true
+    onTriggered: timerProcess.running = true
   }
 
   Rectangle {
@@ -62,9 +81,10 @@ Item {
     RowLayout {
       id: content
       anchors.centerIn: parent
-      spacing: Style.margins
+      spacing: Style.marginS
+
       NText {
-        text: root.timerData.text ?? "--"
+        text: root.timerData.text ?? "farts"
         pointSize: root.barFontSize
         color: root.timerColor
       }
@@ -75,5 +95,14 @@ Item {
     id: mouseArea
     anchors.fill: parent
     hoverEnabled: true
+    acceptedButtons: Qt.LeftButton | Qt.RightButton
+
+    onClicked: (mouse) => {
+      if (mouse.button === Qt.LeftButton) {
+        leftClickProcess.running = true
+      } else if (mouse.button === Qt.RightButton) {
+        rightClickProcess.running = true
+      }
+    }
   }
 }
