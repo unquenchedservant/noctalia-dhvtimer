@@ -39,7 +39,7 @@ Item {
 
   Process {
     id: timerProcess
-    command: ["cat", "/home/jthorne/dhv_timer.txt"]
+    command: ["cat", "/home/jthorne/.config/ChillClock/current_timer.json"]
     stdout: StdioCollector {}
 
     onExited: {
@@ -51,16 +51,16 @@ Item {
 
   Process {
     id: leftClickProcess
-    command: ["touch", "/home/jthorne/dhv_timer_click1"]
+    command: ["touch", "/home/jthorne/.config/ChillClock/.toggle_primary"]
   }
 
   Process {
     id: rightClickProcess
-    command: ["touch", "/home/jthorne/dhv_timer_click2"]
+    command: ["touch", "/home/jthorne/.config/ChillClock/.toggle_secondary"]
   }
 
   Timer {
-    interval: 1000
+    interval: 500
     running: true
     repeat: true
     triggeredOnStart: true

@@ -1,7 +1,7 @@
 {
   "id": "com.jonthorne.DHVTimer",
   "name": "DHV Timer",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "minNoctaliaVersion": "3.6.0",
   "author": "Jon Thorne",
   "license": "MIT",
