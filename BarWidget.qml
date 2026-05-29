@@ -28,6 +28,7 @@ Item {
 
   property var timerData: ({text: "0:00", "class": "white"})
   property string serverUrl: "http://localhost:2420"
+  property string apiKey: ""
 
   property color timerColor: {
     switch (timerData["class"]) {
@@ -40,11 +41,15 @@ Item {
 
   Process {
     id: configReader
-    command: ["python3", "-c", "import json; d=json.load(open('/home/jthorne/.config/ChillClock/config.json')); print(d.get('server_url','http://localhost:2420'))"]
+    command: ["python3", "-c", "import json,os; d=json.load(open(os.path.expanduser('~/.config/ChillClock/config.json'))); url=d.get('server_url','http://localhost:2420'); lines=open(os.path.expanduser('~/.config/ChillClock/.env')).readlines() if os.path.exists(os.path.expanduser('~/.config/ChillClock/.env')) else []; key=next((l.strip().split('=',1)[1] for l in lines if l.startswith('CHILLCLOCK_API_KEY=')), ''); print(json.dumps({'url':url,'key':key}))"]
+
     stdout: StdioCollector {}
     onExited: {
-      var url = configReader.stdout.text.trim()
-      if (url) root.serverUrl = url
+      try {
+        var cfg = JSON.parse(configReader.stdout.text.trim())
+        if (cfg.url) root.serverUrl = cfg.url
+        if (cfg.key) root.apiKey = cfg.key
+      } catch (_) {}
     }
   }
 
@@ -52,7 +57,7 @@ Item {
 
   Process {
     id: timerProcess
-    command: ["curl", "-s", root.serverUrl + "/status"]
+    command: ["curl", "-s", "-H", "X-API-KEY: " + root.apiKey, root.serverUrl + "/status"]
     stdout: StdioCollector {}
     onExited: {
       try {
@@ -71,12 +76,12 @@ Item {
 
   Process {
     id: togglePrimary
-    command: ["curl", "-s", "-X", "POST", root.serverUrl + "/toggle?timer=1"]
+    command: ["curl", "-s", "-X", "POST", "-H", "X-API-KEY: " + root.apiKey, root.serverUrl + "/toggle?timer=1"]
   }
 
   Process {
     id: toggleSecondary
-    command: ["curl", "-s", "-X", "POST", root.serverUrl + "/toggle?timer=2"]
+    command: ["curl", "-s", "-X", "POST", "-H", "X-API-KEY: " + root.apiKey, root.serverUrl + "/toggle?timer=2"]
   }
   
 
