@@ -27,6 +27,7 @@ Item {
   implicitHeight: contentHeight
 
   property var timerData: ({text: "0:00", "class": "white"})
+  property string serverUrl: "http://localhost:2420"
 
   property color timerColor: {
     switch (timerData["class"]) {
@@ -38,25 +39,26 @@ Item {
   }
 
   Process {
-    id: timerProcess
-    command: ["cat", "/home/jthorne/.config/ChillClock/current_timer.json"]
+    id: configReader
+    command: ["python3", "-c", "import json; d=json.load(open('/home/jthorne/.config/ChillClock/config.json')); print(d.get('server_url','http://localhost:2420'))"]
     stdout: StdioCollector {}
-
     onExited: {
-      try {
-        root.timerData = JSON.parse(timerProcess.stdout.text.trim())
-      } catch (_) {}
+      var url = configReader.stdout.text.trim()
+      if (url) root.serverUrl = url
     }
   }
 
-  Process {
-    id: leftClickProcess
-    command: ["touch", "/home/jthorne/.config/ChillClock/.toggle_primary"]
-  }
+  Component.onCompleted: configReader.running = true
 
   Process {
-    id: rightClickProcess
-    command: ["touch", "/home/jthorne/.config/ChillClock/.toggle_secondary"]
+    id: timerProcess
+    command: ["curl", "-s", root.serverUrl + "/status"]
+    stdout: StdioCollector {}
+    onExited: {
+      try {
+        root.timerData = JSON.parse(timerProcess.stdout.text.trim())
+      } catch(_) {}
+    }
   }
 
   Timer {
@@ -66,6 +68,17 @@ Item {
     triggeredOnStart: true
     onTriggered: timerProcess.running = true
   }
+
+  Process {
+    id: togglePrimary
+    command: ["curl", "-s", "-X", "POST", root.serverUrl + "/toggle?timer=1"]
+  }
+
+  Process {
+    id: toggleSecondary
+    command: ["curl", "-s", "-X", "POST", root.serverUrl + "/toggle?timer=2"]
+  }
+  
 
   Rectangle {
     id: visualCapsule
@@ -99,9 +112,9 @@ Item {
 
     onClicked: (mouse) => {
       if (mouse.button === Qt.LeftButton) {
-        leftClickProcess.running = true
+        togglePrimary.running = true
       } else if (mouse.button === Qt.RightButton) {
-        rightClickProcess.running = true
+        toggleSecondary.running = true
       }
     }
   }
